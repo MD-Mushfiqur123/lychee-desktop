@@ -47,7 +47,7 @@ export interface UsePipelineReturn {
 
 // ---- Defaults ----
 
-const API_BASE = 'http://localhost:18690';
+const API_BASE = 'http://localhost:11434';
 
 function generateId(): string {
   return 'stage_' + Math.random().toString(36).substring(2, 10);
@@ -82,30 +82,45 @@ export function usePipeline(): UsePipelineReturn {
   const fetchModels = useCallback(async () => {
     setModelError('');
     try {
-      const res = await fetch(`${API_BASE}/v1/models`, {
+      // Try Lychee/Ollama /api/tags endpoint first (matches useLychee.ts)
+      let res = await fetch(`${API_BASE}/api/tags`, {
         signal: AbortSignal.timeout(5000),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const list: ModelInfo[] = (data.models || data.data || data).map(
-        (m: { id: string; name?: string; provider?: string }) => ({
-          id: m.id,
-          name: m.name || m.id,
-          provider: m.provider,
-        })
-      );
-      setAvailableModels(list);
+      if (!res.ok) {
+        // Fallback 1: OpenAI-compatible /v1/models
+        res = await fetch(`${API_BASE}/v1/models`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const list: ModelInfo[] = (data.data || data.models || data).map(
+          (m: any) => ({
+            id: m.id,
+            name: m.name || m.id,
+            provider: m.owned_by || m.provider,
+          })
+        );
+        setAvailableModels(list);
+      } else {
+        const data = await res.json();
+        const list: ModelInfo[] = (data.models || data || []).map((m: any) => ({
+          id: m.name || m.model || m.id,
+          name: m.name || m.model || m.id,
+          provider: m.details?.family || undefined,
+        }));
+        setAvailableModels(list);
+      }
     } catch (err: any) {
       const msg = err?.message || 'Failed to fetch models';
       setModelError(msg);
       // Fallback models if server not reachable
       setAvailableModels([
-        { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai' },
-        { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai' },
-        { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'anthropic' },
-        { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'google' },
-        { id: 'llama-3.1-70b', name: 'Llama 3.1 70B', provider: 'meta' },
-        { id: 'qwen-2.5-72b', name: 'Qwen 2.5 72B', provider: 'alibaba' },
+        { id: 'llama3.2', name: 'llama3.2', provider: 'llama' },
+        { id: 'qwen2.5', name: 'qwen2.5', provider: 'qwen2' },
+        { id: 'mistral', name: 'mistral', provider: 'llama' },
+        { id: 'gemma3', name: 'gemma3', provider: 'gemma' },
+        { id: 'phi4', name: 'phi4', provider: 'phi' },
+        { id: 'deepseek-r1', name: 'deepseek-r1', provider: 'deepseek' },
       ]);
     }
   }, []);
@@ -202,25 +217,22 @@ export function usePipeline(): UsePipelineReturn {
         ];
 
         if (previousOutput) {
-          messages.push({
-            role: 'user',
-            content: previousOutput,
-          });
+          messages.push({ role: 'user', content: previousOutput });
         } else {
-          messages.push({
-            role: 'user',
-            content: stage.prompt || 'Hello!',
-          });
+          messages.push({ role: 'user', content: stage.prompt || 'Hello!' });
         }
 
-        const res = await fetch(`${API_BASE}/v1/chat/completions`, {
+        const res = await fetch(`${API_BASE}/api/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: stage.model,
             messages,
-            temperature: stage.temperature,
-            max_tokens: stage.maxTokens,
+            stream: false,
+            options: {
+              temperature: stage.temperature,
+              num_predict: stage.maxTokens,
+            },
           }),
           signal: controller.signal,
         });
@@ -232,7 +244,7 @@ export function usePipeline(): UsePipelineReturn {
 
         const data = await res.json();
         const content =
-          data.choices?.[0]?.message?.content || data.response || data.output || '';
+          data.message?.content || data.response || data.choices?.[0]?.message?.content || '';
         previousOutput = content;
 
         stageResult.status = 'done';
