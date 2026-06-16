@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#d4a017"/>
+      <stop offset="100%" stop-color="#f0c040"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+
+  <!-- Subtle grain pattern -->
+  <rect width="1200" height="630" opacity="0.03">
+    <animate attributeName="opacity" values="0.03;0.04;0.03" dur="8s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Amber accent lines -->
+  <rect x="0" y="0" width="1200" height="4" fill="url(#accentGrad)" opacity="0.6"/>
+  <rect x="0" y="626" width="1200" height="4" fill="url(#accentGrad)" opacity="0.6"/>
+
+  <!-- Decorative circles -->
+  <circle cx="1100" cy="100" r="120" fill="none" stroke="#d4a017" stroke-width="0.5" opacity="0.08"/>
+  <circle cx="1100" cy="100" r="80" fill="none" stroke="#d4a017" stroke-width="0.5" opacity="0.05"/>
+  <circle cx="100" cy="530" r="90" fill="none" stroke="#d4a017" stroke-width="0.5" opacity="0.06"/>
+  
+  <!-- Lychee icon -->
+  <g transform="translate(560, 120)" filter="url(#glow)">
+    <circle cx="40" cy="40" r="38" fill="none" stroke="#d4a017" stroke-width="2" opacity="0.4"/>
+    <circle cx="40" cy="40" r="10" fill="#d4a017" opacity="0.9"/>
+    <path d="M40 2 C18 2 2 18 2 40 C2 62 18 78 40 78 C62 78 78 62 78 40 C78 18 62 2 40 2 Z M40 74 C21.2 74 6 58.8 6 40 C6 21.2 21.2 6 40 6 C58.8 6 74 21.2 74 40 C74 58.8 58.8 74 40 74 Z" fill="#f0c040" opacity="0.85"/>
+  </g>
+
+  <!-- Main Title -->
+  <text x="600" y="290" text-anchor="middle" font-family="Georgia, 'Instrument Serif', serif" font-style="italic" font-size="76" font-weight="400" fill="#f2f4ec" letter-spacing="-2">
+    Lychee Desktop
+  </text>
+
+  <!-- Subtitle -->
+  <text x="600" y="350" text-anchor="middle" font-family="'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif" font-size="24" font-weight="500" fill="#d4a017" letter-spacing="1">
+    Chat · Studio · Models — All Local
+  </text>
+
+  <!-- Divider line -->
+  <line x1="400" y1="390" x2="800" y2="390" stroke="#d4a017" stroke-width="1" opacity="0.3"/>
+
+  <!-- Feature pills -->
+  <g transform="translate(600, 455)">
+    <rect x="-340" y="-18" width="680" height="36" rx="18" fill="none" stroke="#d4a017" stroke-width="0.8" opacity="0.15"/>
+    <text x="-220" y="4" text-anchor="middle" font-family="'Hanken Grotesk', sans-serif" font-size="14" font-weight="600" fill="#b9beae" letter-spacing="0.5">🧠 Multi-Model Pipelines</text>
+    <text x="0" y="4" text-anchor="middle" font-family="'Hanken Grotesk', sans-serif" font-size="14" font-weight="600" fill="#b9beae" letter-spacing="0.5">💾 Persistent Memory</text>
+    <text x="220" y="4" text-anchor="middle" font-family="'Hanken Grotesk', sans-serif" font-size="14" font-weight="600" fill="#b9beae" letter-spacing="0.5">🔌 API-Compatible</text>
+  </g>
+
+  <!-- GitHub link -->
+  <g transform="translate(600, 545)">
+    <rect x="-240" y="-16" width="480" height="32" rx="16" fill="rgba(212, 160, 23, 0.08)" stroke="#d4a017" stroke-width="1" opacity="0.5"/>
+    <text x="0" y="5" text-anchor="middle" font-family="'SF Mono', 'Hanken Grotesk', monospace" font-size="14" font-weight="500" fill="#d4a017" letter-spacing="0.5" opacity="0.85">
+      github.com/MD-Mushfiqur123/lychee-desktop
+    </text>
+  </g>
+
+  <!-- Bottom subtle dots -->
+  <circle cx="200" cy="400" r="1.5" fill="#d4a017" opacity="0.15"/>
+  <circle cx="300" cy="420" r="1" fill="#d4a017" opacity="0.1"/>
+  <circle cx="900" cy="380" r="1.5" fill="#d4a017" opacity="0.15"/>
+  <circle cx="1000" cy="410" r="1" fill="#d4a017" opacity="0.1"/>
+</svg>

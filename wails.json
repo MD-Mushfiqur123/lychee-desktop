@@ -9,5 +9,13 @@
   "author": {
     "name": "Lychee Tech",
     "email": "hello@lychee.dev"
+  },
+  "info": {
+    "productName": "Lychee Desktop",
+    "companyName": "Lychee Tech",
+    "description": "Native desktop app for Lychee — universal LLM runtime",
+    "copyright": "© 2026 Lychee Tech",
+    "productVersion": "1.0.0",
+    "fileVersion": "1.0.0"
   }
 }

@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import StatusBar from './StatusBar';
 
 export type TabId = 'home' | 'chat' | 'studio' | 'models' | 'settings';
 
@@ -75,6 +76,7 @@ interface LayoutProps {
 export default function Layout({ activeTab, onTabChange, children }: LayoutProps) {
   return (
     <div className="layout">
+      {/* Desktop Sidebar */}
       <nav className="sidebar">
         <div className="sidebar-brand">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -106,11 +108,28 @@ export default function Layout({ activeTab, onTabChange, children }: LayoutProps
         </div>
       </nav>
 
+      {/* Main Content + StatusBar */}
       <main className="main-content">
-        <div className="main-content-inner">
+        <div className="main-content-inner tab-content" key={activeTab}>
           {children}
         </div>
+        <StatusBar />
       </main>
+
+      {/* Mobile Bottom Tab Bar */}
+      <nav className="bottom-tabs">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            className={`bottom-tab ${activeTab === tab.id ? 'active' : ''}`}
+            onClick={() => onTabChange(tab.id)}
+            aria-label={tab.label}
+          >
+            {tab.icon}
+            <span>{tab.label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }

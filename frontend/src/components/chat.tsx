@@ -3,6 +3,57 @@ import ModelSelector from './ModelSelector';
 import { useLychee } from '../hooks/useLychee';
 import type { ChatMessage } from '../hooks/useLychee';
 
+/** Simple code fence detection: render text between ``` as <pre><code> */
+function renderContent(text: string): JSX.Element[] {
+  const parts: JSX.Element[] = [];
+  const lines = text.split('\n');
+  let inCodeBlock = false;
+  let codeBuffer: string[] = [];
+  let key = 0;
+  let textBuffer: string[] = [];
+
+  const flushText = () => {
+    if (textBuffer.length > 0) {
+      parts.push(<span key={key++}>{textBuffer.join('\n')}</span>);
+      textBuffer = [];
+    }
+  };
+
+  const flushCode = () => {
+    if (codeBuffer.length > 0) {
+      parts.push(
+        <pre key={key++}><code>{codeBuffer.join('\n')}</code></pre>
+      );
+      codeBuffer = [];
+    }
+  };
+
+  for (const line of lines) {
+    if (line.startsWith('```')) {
+      if (inCodeBlock) {
+        flushCode();
+        inCodeBlock = false;
+      } else {
+        flushText();
+        inCodeBlock = true;
+      }
+    } else if (inCodeBlock) {
+      codeBuffer.push(line);
+    } else {
+      textBuffer.push(line);
+    }
+  }
+
+  // flush remaining
+  if (inCodeBlock) {
+    flushCode();
+  } else {
+    flushText();
+  }
+
+  return parts;
+}
+
 export default function Chat() {
   const { models, loadingModels, modelError, fetchModels, sendMessage, cancelRequest } =
     useLychee();
@@ -81,11 +132,33 @@ export default function Chat() {
     setStreaming(false);
   };
 
+  const renderMessageContent = useCallback((content: string, isStreaming: boolean) => {
+    const elements = renderContent(content);
+    if (elements.length === 0) return null;
+    if (isStreaming) {
+      // Wrap last element with streaming cursor
+      const last = elements[elements.length - 1];
+      if (last.type === 'span') {
+        elements[elements.length - 1] = (
+          <span key={(last.key as string) + '-cursor'} className="streaming-cursor">
+            {last.props.children}
+          </span>
+        );
+      }
+    }
+    return elements;
+  }, []);
+
   return (
     <div className="chat-container">
       {/* Header */}
       <header className="chat-header">
-        <h1 className="chat-title">Lychee Desktop</h1>
+        <div className="chat-header-left">
+          <h1 className="chat-title">Lychee Desktop</h1>
+          {selectedModel && (
+            <span className="chat-model-badge">{selectedModel}</span>
+          )}
+        </div>
         <ModelSelector
           models={models}
           selectedModel={selectedModel}
@@ -100,18 +173,30 @@ export default function Chat() {
       <div className="chat-messages">
         {messages.length === 0 && !streaming && (
           <div className="chat-empty">
-            <div className="chat-empty-icon">&#9678;</div>
-            <p>Select a model and start a conversation</p>
+            <div className="chat-empty-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="4" />
+                <line x1="4.93" y1="4.93" x2="9.17" y2="9.17" />
+                <line x1="14.83" y1="14.83" x2="19.07" y2="19.07" />
+                <line x1="14.83" y1="9.17" x2="19.07" y2="4.93" />
+                <line x1="4.93" y1="19.07" x2="9.17" y2="14.83" />
+              </svg>
+            </div>
+            <span className="chat-empty-title">Start a conversation with Lychee</span>
+            <p>Select a model from the dropdown above and type your first message to begin.</p>
           </div>
         )}
 
         {messages.map((msg, i) => (
           <div key={i} className={`message-row ${msg.role}`}>
-            <div className="message-bubble">
+            <div className={`message-bubble ${msg.role === 'system' ? 'error-bubble' : ''}`}>
               <div className="message-role">
-                {msg.role === 'user' ? 'You' : 'Assistant'}
+                {msg.role === 'user' ? 'You' : msg.role === 'assistant' ? 'Assistant' : 'System'}
               </div>
-              <div className="message-content">{msg.content}</div>
+              <div className="message-content">
+                {renderMessageContent(msg.content, false)}
+              </div>
             </div>
           </div>
         ))}
@@ -121,7 +206,9 @@ export default function Chat() {
           <div className="message-row assistant">
             <div className="message-bubble">
               <div className="message-role">Assistant</div>
-              <div className="message-content">{streamContent}</div>
+              <div className="message-content">
+                {renderMessageContent(streamContent, true)}
+              </div>
             </div>
           </div>
         )}
@@ -139,7 +226,8 @@ export default function Chat() {
         {error && (
           <div className="message-row system">
             <div className="message-bubble error-bubble">
-              {error}
+              <div className="message-role">Error</div>
+              <div className="message-content">{error}</div>
             </div>
           </div>
         )}

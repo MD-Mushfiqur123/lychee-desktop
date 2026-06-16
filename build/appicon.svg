@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- Dark background -->
+  <rect width="256" height="256" rx="48" fill="#0d1117"/>
+
+  <!-- L shape shadow -->
+  <rect x="90" y="60" width="30" height="130" rx="4" fill="#d97706"/>
+  <rect x="90" y="180" width="90" height="25" rx="4" fill="#d97706"/>
+
+  <!-- L shape main — amber/gold -->
+  <rect x="85" y="55" width="30" height="130" rx="4" fill="#f59e0b"/>
+  <rect x="85" y="175" width="90" height="25" rx="4" fill="#f59e0b"/>
+</svg>
