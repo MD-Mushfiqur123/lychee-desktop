@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import App from '../App';
 
 // ── Mock localStorage ──
@@ -32,6 +32,7 @@ beforeEach(() => {
       removeEventListener: vi.fn(),
     });
   }
+  localStorage.clear();
 });
 
 // ── Tests ──
@@ -44,7 +45,6 @@ describe('App', () => {
   it('renders the sidebar with navigation tabs', () => {
     render(<App />);
     // Layout has both sidebar and bottom-tab with same labels
-    // getAllByLabelText returns an array — verify both exist
     const homeTabs = screen.getAllByLabelText('Home');
     const chatTabs = screen.getAllByLabelText('Chat');
     const studioTabs = screen.getAllByLabelText('Studio');
@@ -67,34 +67,38 @@ describe('App', () => {
 });
 
 describe('Chat Component', () => {
-  it('renders the Chat component when navigated to', () => {
+  it('renders the Chat component when navigated to', async () => {
     render(<App />);
     // Click the Chat tab in the sidebar (first element)
     const chatTabs = screen.getAllByLabelText('Chat');
-    chatTabs[0].click();
-    // Chat input should be present
+    await act(async () => {
+      fireEvent.click(chatTabs[0]);
+    });
+    // After navigation, Chat component should render with its input
     const input = document.querySelector('.chat-input');
     expect(input).toBeTruthy();
   });
 });
 
 describe('ModelManager Component', () => {
-  it('renders the ModelManager component when navigated to', () => {
+  it('renders the ModelManager component when navigated to', async () => {
     render(<App />);
-    // Click the Models tab in the sidebar (first element)
     const modelsTabs = screen.getAllByLabelText('Models');
-    modelsTabs[0].click();
+    await act(async () => {
+      fireEvent.click(modelsTabs[0]);
+    });
     // Model Manager title should be present
     expect(screen.getByText('Model Manager')).toBeInTheDocument();
   });
 });
 
 describe('Studio Component', () => {
-  it('renders the Studio component when navigated to', () => {
+  it('renders the Studio component when navigated to', async () => {
     render(<App />);
-    // Click the Studio tab in the sidebar (first element)
     const studioTabs = screen.getAllByLabelText('Studio');
-    studioTabs[0].click();
+    await act(async () => {
+      fireEvent.click(studioTabs[0]);
+    });
     // Pipeline Builder title should be present
     expect(screen.getByText(/Pipeline Builder/i)).toBeInTheDocument();
   });
