@@ -136,6 +136,26 @@ GitHub Actions builds are configured in `.github/workflows/build-desktop.yml`:
 
 - **[USAGE.md](USAGE.md)** — Full usage guide: chat, Studio, model management, troubleshooting
 
+## Community
+
+<div align="center">
+
+[![GitHub Stars](https://img.shields.io/github/stars/MD-Mushfiqur123/lychee-desktop?style=social)](https://github.com/MD-Mushfiqur123/lychee-desktop/stargazers)
+[![Discord](https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white)](https://discord.gg/lychee-dev)
+[![GitHub Discussions](https://img.shields.io/badge/GitHub-Discussions-181717?logo=github)](https://github.com/MD-Mushfiqur123/lychee-desktop/discussions)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
+
+</div>
+
+| Channel | Purpose |
+|---------|---------|
+| 💬 **Discord** | Real-time chat, community help, showcase your projects — [Join here](https://discord.gg/lychee-dev) |
+| 🗣️ **GitHub Discussions** | Ask questions, share ideas, discuss features — [Start a discussion](https://github.com/MD-Mushfiqur123/lychee-desktop/discussions) |
+| 📝 **Contributing Guide** | Setup, project structure, code style, PR workflow — [CONTRIBUTING.md](CONTRIBUTING.md) |
+| 📜 **Code of Conduct** | Community standards and expectations — [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) |
+
+---
+
 ## License
 
 MIT © Lychee Tech
