@@ -5,10 +5,36 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"os/exec"
 	"sync"
 	"time"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
+
+// PipelineNode represents a single node in a pipeline
+type PipelineNode struct {
+	ID          string  `json:"id"`
+	Model       string  `json:"model"`
+	Prompt      string  `json:"prompt"`
+	Temperature float64 `json:"temperature"`
+	MaxTokens   int     `json:"maxTokens"`
+}
+
+// PipelineConnection represents a connection between two pipeline nodes
+type PipelineConnection struct {
+	From string `json:"from"`
+	To   string `json:"to"`
+}
+
+// PipelineExport is the full pipeline export format for sharing
+type PipelineExport struct {
+	Name        string               `json:"name"`
+	Version     string               `json:"version"`
+	Nodes       []PipelineNode       `json:"nodes"`
+	Connections []PipelineConnection `json:"connections"`
+}
 
 type App struct {
 	ctx        context.Context
@@ -72,6 +98,82 @@ func (a *App) IsLycheeRunning() bool {
 // GetLycheePath returns the path to lychee binary
 func (a *App) GetLycheePath() string {
 	return a.lycheePath
+}
+
+// ExportPipeline saves pipeline JSON data to a file chosen by the user.
+// Returns the file path on success.
+func (a *App) ExportPipeline(data string) string {
+	defaultName := fmt.Sprintf("lychee-pipeline-%s.lychee-pipeline",
+		time.Now().Format("2006-01-02"))
+
+	filePath, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		DefaultFilename: defaultName,
+		Title:           "Export Lychee Pipeline",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "Lychee Pipeline (*.lychee-pipeline)",
+				Pattern:     "*.lychee-pipeline",
+			},
+			{
+				DisplayName: "JSON Files (*.json)",
+				Pattern:     "*.json",
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Sprintf("error: %v", err)
+	}
+	if filePath == "" {
+		return "" // user cancelled
+	}
+
+	err = os.WriteFile(filePath, []byte(data), 0644)
+	if err != nil {
+		return fmt.Sprintf("error writing file: %v", err)
+	}
+
+	return filePath
+}
+
+// ImportPipeline opens a file dialog for the user to select a .lychee-pipeline JSON file.
+// Returns the file contents as a JSON string.
+func (a *App) ImportPipeline() string {
+	filePath, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Import Lychee Pipeline",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "Lychee Pipeline (*.lychee-pipeline)",
+				Pattern:     "*.lychee-pipeline",
+			},
+			{
+				DisplayName: "JSON Files (*.json)",
+				Pattern:     "*.json",
+			},
+			{
+				DisplayName: "All Files (*.*)",
+				Pattern:     "*.*",
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Sprintf(`{"error": "%v"}`, err)
+	}
+	if filePath == "" {
+		return "" // user cancelled
+	}
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Sprintf(`{"error": "failed to read file: %v"}`, err)
+	}
+
+	// Validate JSON
+	var raw json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Sprintf(`{"error": "invalid JSON in file: %v"}`, err)
+	}
+
+	return string(data)
 }
 
 // checkLycheeAPI verifies that the Lychee API is reachable on localhost:11434.

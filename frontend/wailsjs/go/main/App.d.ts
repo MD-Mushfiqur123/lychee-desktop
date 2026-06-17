@@ -3,9 +3,13 @@
 
 export function AutoStartLychee():Promise<string>;
 
+export function ExportPipeline(arg1:string):Promise<string>;
+
 export function GetLycheePath():Promise<string>;
 
 export function GetLycheeStatus():Promise<Record<string, any>>;
+
+export function ImportPipeline():Promise<string>;
 
 export function IsLycheeRunning():Promise<boolean>;
 

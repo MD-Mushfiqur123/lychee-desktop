@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import ModelSelector from './ModelSelector';
-import { useLychee } from '../hooks/useLychee';
-import type { ChatMessage } from '../hooks/useLychee';
+import ModelSelector from './modelselector';
+import { useLychee } from '../hooks/uselychee';
+import type { ChatMessage } from '../hooks/uselychee';
 
 /** Simple code fence detection: render text between ``` as <pre><code> */
 function renderContent(text: string): JSX.Element[] {

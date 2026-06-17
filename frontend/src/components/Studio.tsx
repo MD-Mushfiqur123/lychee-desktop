@@ -1,6 +1,46 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { usePipeline } from '../hooks/usePipeline';
+import { usePipeline } from '../hooks/usepipeline';
 import PipelineStage from './PipelineStage';
+
+// ---- Pipeline export format ----
+
+interface PipelineExport {
+  name: string;
+  version: string;
+  createdAt: string;
+  stages: ReturnType<typeof usePipeline>['stages'];
+}
+
+const PIPELINE_VERSION = '1.0.0';
+const PIPELINE_EXTENSION = '.lychee-pipeline';
+
+function buildExportData(stages: ReturnType<typeof usePipeline>['stages']): PipelineExport {
+  return {
+    name: 'Lychee Pipeline',
+    version: PIPELINE_VERSION,
+    createdAt: new Date().toISOString(),
+    stages,
+  };
+}
+
+function pipelineToBase64(stages: ReturnType<typeof usePipeline>['stages']): string {
+  const data = buildExportData(stages);
+  const json = JSON.stringify(data);
+  return btoa(unescape(encodeURIComponent(json)));
+}
+
+function base64ToPipeline(base64: string): PipelineExport | null {
+  try {
+    const json = decodeURIComponent(escape(atob(base64)));
+    const data = JSON.parse(json) as PipelineExport;
+    if (!data.stages || !Array.isArray(data.stages)) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+// ---- Component ----
 
 export default function Studio() {
   const pipeline = usePipeline();
@@ -17,15 +57,36 @@ export default function Studio() {
     updateStage,
     runPipeline,
     clearPipeline,
+    loadPipeline,
     fetchModels,
   } = pipeline;
 
   const canvasRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [shareCopied, setShareCopied] = useState(false);
 
   // Fetch available models on mount
   useEffect(() => {
     fetchModels();
   }, [fetchModels]);
+
+  // Load pipeline from URL ?pipeline=<base64> param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const pipelineParam = params.get('pipeline');
+    if (pipelineParam) {
+      const data = base64ToPipeline(pipelineParam);
+      if (data) {
+        loadPipeline(data.stages);
+        // Clean URL after loading
+        const url = new URL(window.location.href);
+        url.searchParams.delete('pipeline');
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ---- Drag-like model selection ----
   const [dragging, setDragging] = useState(false);
@@ -86,17 +147,59 @@ export default function Studio() {
     }
   }, [runPipeline]);
 
-  const handleSave = useCallback(() => {
-    const blob = new Blob(
-      [JSON.stringify({ stages, timestamp: Date.now() }, null, 2)],
-      { type: 'application/json' }
-    );
+  // Export: download pipeline as .lychee-pipeline JSON file
+  const handleExport = useCallback(() => {
+    const data = buildExportData(stages);
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json',
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `lychee-pipeline-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `lychee-pipeline-${new Date().toISOString().slice(0, 10)}${PIPELINE_EXTENSION}`;
     a.click();
     URL.revokeObjectURL(url);
+  }, [stages]);
+
+  // Import: open file picker for .lychee-pipeline files
+  const handleImportClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleImportFile = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target?.result as string) as PipelineExport;
+          if (data.stages && Array.isArray(data.stages) && data.stages.length > 0) {
+            loadPipeline(data.stages);
+          }
+        } catch {
+          // Invalid file
+        }
+      };
+      reader.readAsText(file);
+      // Reset input so the same file can be re-imported
+      e.target.value = '';
+    },
+    [loadPipeline]
+  );
+
+  // Share: copy pipeline as base64 URL param
+  const handleShare = useCallback(async () => {
+    const b64 = pipelineToBase64(stages);
+    const shareUrl = `${window.location.origin}${window.location.pathname}?pipeline=${b64}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      // Fallback: show URL in a prompt
+      prompt('Copy this link to share your pipeline:', shareUrl);
+    }
   }, [stages]);
 
   const handleKeyDown = useCallback(
@@ -111,6 +214,15 @@ export default function Studio() {
 
   return (
     <div className="studio" onKeyDown={handleKeyDown}>
+      {/* Hidden file input for importing pipelines */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={PIPELINE_EXTENSION}
+        style={{ display: 'none' }}
+        onChange={handleImportFile}
+      />
+
       {/* Header */}
       <header className="studio-header">
         <h1 className="studio-title">Pipeline Builder</h1>
@@ -240,10 +352,24 @@ export default function Studio() {
         </button>
         <button
           className="toolbar-btn"
-          onClick={handleSave}
+          onClick={handleExport}
           disabled={isRunning || stages.length === 0}
         >
-          Save
+          Export
+        </button>
+        <button
+          className="toolbar-btn"
+          onClick={handleImportClick}
+          disabled={isRunning}
+        >
+          Import
+        </button>
+        <button
+          className="toolbar-btn"
+          onClick={handleShare}
+          disabled={isRunning || stages.length === 0}
+        >
+          {shareCopied ? 'Copied!' : 'Share'}
         </button>
         <button
           className="toolbar-btn toolbar-btn-danger"

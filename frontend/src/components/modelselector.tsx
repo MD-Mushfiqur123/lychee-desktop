@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { LycheeModel } from '../hooks/useLychee';
+import type { LycheeModel } from '../hooks/uselychee';
 
 interface ModelSelectorProps {
   models: LycheeModel[];

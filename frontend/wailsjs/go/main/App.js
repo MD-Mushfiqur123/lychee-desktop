@@ -6,12 +6,20 @@ export function AutoStartLychee() {
   return window['go']['main']['App']['AutoStartLychee']();
 }
 
+export function ExportPipeline(arg1) {
+  return window['go']['main']['App']['ExportPipeline'](arg1);
+}
+
 export function GetLycheePath() {
   return window['go']['main']['App']['GetLycheePath']();
 }
 
 export function GetLycheeStatus() {
   return window['go']['main']['App']['GetLycheeStatus']();
+}
+
+export function ImportPipeline() {
+  return window['go']['main']['App']['ImportPipeline']();
 }
 
 export function IsLycheeRunning() {

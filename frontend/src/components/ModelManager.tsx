@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useLychee, type LycheeModel } from '../hooks/useLychee';
+import { useLychee, type LycheeModel } from '../hooks/uselychee';
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;

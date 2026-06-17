@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Layout, { type TabId } from './components/Layout';
-import Home from './components/Home';
-import Chat from './components/Chat';
+import Home from './components/home';
+import Chat from './components/chat';
 import Studio from './components/Studio';
 import ModelManager from './components/ModelManager';
 import Settings from './components/Settings';
