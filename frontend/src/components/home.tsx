@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import type { TabId } from './Layout';
 
 interface HomeProps {
@@ -11,6 +11,18 @@ interface Stats {
   lycheeVersion: string;
 }
 
+async function callBackend(method: string, ...args: any[]): Promise<any> {
+  try {
+    const w = window as any;
+    if (w['go']?.main?.App?.[method]) {
+      return await w['go']['main']['App'][method](...args);
+    }
+  } catch {
+    // Not running inside Wails
+  }
+  return null;
+}
+
 export default function Home({ onNavigate }: HomeProps) {
   const [stats, setStats] = useState<Stats>({
     installedModels: 0,
@@ -18,45 +30,66 @@ export default function Home({ onNavigate }: HomeProps) {
     lycheeVersion: '--',
   });
   const [loading, setLoading] = useState(true);
+  const [starting, setStarting] = useState(false);
 
-  useEffect(() => {
-    async function loadStats() {
-      try {
-        // Check Lychee status
-        const res = await fetch('http://localhost:11434/api/tags', {
-          signal: AbortSignal.timeout(3000),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const models = data.models || [];
-          setStats((s) => ({
-            ...s,
-            installedModels: models.length,
-            lycheeRunning: true,
-          }));
-        }
-      } catch {
-        setStats((s) => ({ ...s, lycheeRunning: false }));
+  const loadStats = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Check Lychee status
+      const res = await fetch('http://localhost:11434/api/tags', {
+        signal: AbortSignal.timeout(3000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const models = data.models || [];
+        setStats((s) => ({
+          ...s,
+          installedModels: models.length,
+          lycheeRunning: true,
+        }));
       }
-
-      // Try to get version
-      try {
-        const verRes = await fetch('http://localhost:11434/api/version', {
-          signal: AbortSignal.timeout(2000),
-        });
-        if (verRes.ok) {
-          const verData = await verRes.json();
-          setStats((s) => ({ ...s, lycheeVersion: verData.version || 'unknown' }));
-        }
-      } catch {
-        // version endpoint may not exist
-      }
-
-      setLoading(false);
+    } catch {
+      setStats((s) => ({ ...s, lycheeRunning: false }));
     }
 
-    loadStats();
+    // Try to get version
+    try {
+      const verRes = await fetch('http://localhost:11434/api/version', {
+        signal: AbortSignal.timeout(2000),
+      });
+      if (verRes.ok) {
+        const verData = await verRes.json();
+        setStats((s) => ({ ...s, lycheeVersion: verData.version || 'unknown' }));
+      }
+    } catch {
+      // version endpoint may not exist
+    }
+
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
+  const handleStartLychee = useCallback(async () => {
+    setStarting(true);
+    try {
+      const result = await callBackend('AutoStartLychee');
+      if (result) {
+        console.log('[lychee-desktop]', result);
+      } else {
+        await callBackend('StartLychee', 'lychee');
+      }
+      // Wait for server to come up then refresh stats
+      await new Promise((r) => setTimeout(r, 3000));
+      await loadStats();
+    } catch {
+      // ignore
+    } finally {
+      setStarting(false);
+    }
+  }, [loadStats]);
 
   return (
     <div className="home">
@@ -96,6 +129,24 @@ export default function Home({ onNavigate }: HomeProps) {
           <div className="stat-label">Server Status</div>
         </div>
       </div>
+
+      {!loading && !stats.lycheeRunning && (
+        <div className="home-start-section">
+          <p className="home-start-hint">
+            Lychee server is not running. Start it to use Chat, Models, and Studio.
+          </p>
+          <button
+            className="action-btn action-btn-primary"
+            onClick={handleStartLychee}
+            disabled={starting}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+            {starting ? 'Starting Lychee...' : 'Start Lychee'}
+          </button>
+        </div>
+      )}
 
       <div className="home-actions">
         <button className="action-btn" onClick={() => onNavigate('chat')}>

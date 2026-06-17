@@ -24,7 +24,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function ModelManager() {
-  const { models, loadingModels, modelError, fetchModels } = useLychee();
+  const { models, loadingModels, modelError, fetchModels, lycheeStopped, startingLychee, startLychee } = useLychee();
 
   const [search, setSearch] = useState('');
   const [pullName, setPullName] = useState('');
@@ -178,7 +178,21 @@ export default function ModelManager() {
       </div>
 
       {/* Error */}
-      {modelError && <div className="mm-status error">{modelError}</div>}
+      {modelError && (
+        <div className="mm-status error">
+          {modelError}
+          {lycheeStopped && (
+            <button
+              className="mm-btn mm-btn-primary"
+              onClick={startLychee}
+              disabled={startingLychee}
+              style={{ marginLeft: 8, whiteSpace: 'nowrap' }}
+            >
+              {startingLychee ? 'Starting...' : 'Start Lychee'}
+            </button>
+          )}
+        </div>
+      )}
       {deleteError && <div className="mm-status error">{deleteError}</div>}
 
       {/* Model List */}

@@ -55,7 +55,7 @@ function renderContent(text: string): JSX.Element[] {
 }
 
 export default function Chat() {
-  const { models, loadingModels, modelError, fetchModels, sendMessage, cancelRequest } =
+  const { models, loadingModels, modelError, fetchModels, sendMessage, cancelRequest, lycheeStopped, startingLychee, startLychee } =
     useLychee();
 
   const [selectedModel, setSelectedModel] = useState('');
@@ -166,6 +166,9 @@ export default function Chat() {
           loading={loadingModels}
           error={modelError}
           onFetch={fetchModels}
+          lycheeStopped={lycheeStopped}
+          startingLychee={startingLychee}
+          onStartLychee={startLychee}
         />
       </header>
 

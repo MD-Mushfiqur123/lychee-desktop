@@ -8,7 +8,7 @@ interface SystemInfo {
 }
 
 export default function Settings() {
-  const [binaryPath, setBinaryPath] = useState('ollama');
+  const [binaryPath, setBinaryPath] = useState('lychee');
   const [port, setPort] = useState('11434');
   const [backend, setBackend] = useState('llama.cpp');
   const [lycheeRunning, setLycheeRunning] = useState(false);
@@ -35,7 +35,7 @@ export default function Settings() {
       }
     } catch {
       setLycheeRunning(false);
-      setStatusError('Connection refused — server may not be running');
+      setStatusError('Connection refused - server may not be running');
     } finally {
       setChecking(false);
     }
@@ -60,13 +60,13 @@ export default function Settings() {
     setStartStopLoading(true);
     try {
       if (lycheeRunning) {
-        // Stop — there's no standard Ollama stop endpoint,
+        // Stop — Lychee process management via Go backend
         // so this would typically invoke a Wails Go backend function.
         // For now, simulate and re-check.
         setLycheeRunning(false);
         setStatusError(null);
       } else {
-        // Start — also would go through Go backend
+        // Start - also would go through Go backend
         setLycheeRunning(true);
         setStatusError(null);
       }
@@ -139,7 +139,7 @@ export default function Settings() {
               className="mm-input"
               value={binaryPath}
               onChange={(e) => setBinaryPath(e.target.value)}
-              placeholder="Path to lychee/ollama binary"
+              placeholder="Path to lychee binary"
             />
             <span className="settings-hint">
               Full path to the Lychee engine executable

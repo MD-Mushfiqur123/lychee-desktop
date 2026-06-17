@@ -8,6 +8,9 @@ interface ModelSelectorProps {
   loading: boolean;
   error: string | null;
   onFetch: () => void;
+  lycheeStopped?: boolean;
+  startingLychee?: boolean;
+  onStartLychee?: () => void;
 }
 
 function formatSize(bytes: number): string {
@@ -24,6 +27,9 @@ export default function ModelSelector({
   loading,
   error,
   onFetch,
+  lycheeStopped,
+  startingLychee,
+  onStartLychee,
 }: ModelSelectorProps) {
   useEffect(() => {
     onFetch();
@@ -49,7 +55,21 @@ export default function ModelSelector({
           ))
         )}
       </select>
-      {error && <span className="model-error">⚠ {error}</span>}
+      {error && (
+        <div className="model-error-row">
+          <span className="model-error">⚠ {error}</span>
+          {lycheeStopped && onStartLychee && (
+            <button
+              className="mm-btn mm-btn-primary"
+              onClick={onStartLychee}
+              disabled={startingLychee}
+              style={{ marginLeft: 8, whiteSpace: 'nowrap', padding: '4px 12px', fontSize: 12 }}
+            >
+              {startingLychee ? 'Starting...' : 'Start Lychee'}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

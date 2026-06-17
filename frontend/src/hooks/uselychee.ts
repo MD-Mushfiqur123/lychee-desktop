@@ -32,6 +32,7 @@ const STORAGE_KEY = 'lychee-conversations';
 const ACTIVE_CHAT_KEY = 'lychee-active-chat';
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 800;
+const BOOT_RETRY_DELAY_MS = 2000; // 2 second delay for initial connection retries
 
 function formatSize(bytes: number): string {
   if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
@@ -45,7 +46,7 @@ function classifyError(err: any): string {
   const msg = (err.message || '').toLowerCase();
 
   if (msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('econnrefused')) {
-    return 'Cannot connect to Ollama. Make sure Ollama is running (ollama serve) on localhost:11434.';
+    return 'Cannot connect to Lychee. The Lychee serve process may not be running.';
   }
   if (msg.includes('timeout') || err.name === 'TimeoutError') {
     return 'Request timed out. The model may still be loading — wait a moment and retry.';
@@ -54,7 +55,7 @@ function classifyError(err: any): string {
     return 'Model not found locally. Pull it first from the Models tab.';
   }
   if (msg.includes('500') || msg.includes('502') || msg.includes('503') || msg.includes('504')) {
-    return 'Ollama server error — it may be overloaded. Try again in a few seconds.';
+    return 'Lychee server error — it may be overloaded. Try again in a few seconds.';
   }
   if (msg.includes('400') && msg.includes('template')) {
     return 'The model does not support chat format. Try a chat-tuned model.';
@@ -73,11 +74,28 @@ function generateTitle(messages: ChatMessage[]): string {
   return text.length > 40 ? text.slice(0, 40) + '…' : text;
 }
 
+/**
+ * Call a Go backend method (Wails binding). Falls back gracefully if running outside Wails.
+ */
+async function callBackend(method: string, ...args: any[]): Promise<any> {
+  try {
+    const w = window as any;
+    if (w['go'] && w['go']['main'] && w['go']['main']['App'] && w['go']['main']['App'][method]) {
+      return await w['go']['main']['App'][method](...args);
+    }
+  } catch {
+    // Not running inside Wails — that's fine, we still work via direct HTTP
+  }
+  return null;
+}
+
 export function useLychee() {
   // ── Model state ──
   const [models, setModels] = useState<LycheeModel[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
+  const [lycheeStopped, setLycheeStopped] = useState(false);
+  const [startingLychee, setStartingLychee] = useState(false);
 
   // ── Conversation state ──
   const [conversations, setConversations] = useState<Conversation[]>(() => {
@@ -121,31 +139,74 @@ export function useLychee() {
     }
   };
 
-  // ── Model fetching ──
+  // ── Model fetching with retry ──
   const fetchModels = useCallback(async () => {
     setLoadingModels(true);
     setModelError(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/tags`, {
-        signal: abortRef.current?.signal,
-      });
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    setLycheeStopped(false);
+
+    let lastErr: any = null;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      // On retries, wait with increasing delay
+      if (attempt > 0) {
+        await new Promise((r) => setTimeout(r, BOOT_RETRY_DELAY_MS * attempt));
       }
-      const data = await res.json();
-      const list: LycheeModel[] = (data.models || []).map((m: any) => ({
-        ...m,
-        sizeFormatted: formatSize(m.size),
-      }));
-      setModels(list);
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        setModelError(classifyError(err));
+
+      try {
+        const res = await fetch(`${API_BASE}/api/tags`, {
+          signal: abortRef.current?.signal,
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        const data = await res.json();
+        const list: LycheeModel[] = (data.models || []).map((m: any) => ({
+          ...m,
+          sizeFormatted: formatSize(m.size),
+        }));
+        setModels(list);
+        setLoadingModels(false);
+        return; // success — exit
+      } catch (err: any) {
+        if (err.name === 'AbortError') {
+          setLoadingModels(false);
+          return;
+        }
+        lastErr = err;
+        // Continue to next retry attempt
       }
-    } finally {
-      setLoadingModels(false);
     }
+
+    // All retries exhausted
+    setLycheeStopped(true);
+    setModelError('Cannot connect to Lychee. The Lychee serve process may not be running.');
+    setLoadingModels(false);
   }, []);
+
+  // ── Start Lychee via Go backend ──
+  const startLychee = useCallback(async () => {
+    setStartingLychee(true);
+    setModelError(null);
+
+    try {
+      const result = await callBackend('AutoStartLychee');
+      if (result) {
+        // Go backend handled it — wait a moment then refresh
+        await new Promise((r) => setTimeout(r, 3000));
+        await fetchModels();
+      } else {
+        // Not running in Wails — try direct start via StartLychee
+        await callBackend('StartLychee', 'lychee');
+        await new Promise((r) => setTimeout(r, 3000));
+        await fetchModels();
+      }
+    } catch (err: any) {
+      setModelError(`Failed to start Lychee: ${err.message || err}`);
+    } finally {
+      setStartingLychee(false);
+    }
+  }, [fetchModels]);
 
   // ── Conversation management ──
   const createConversation = useCallback((): string => {
@@ -368,6 +429,9 @@ export function useLychee() {
     loadingModels,
     modelError,
     fetchModels,
+    lycheeStopped,
+    startingLychee,
+    startLychee,
 
     // Chat
     sendMessage,

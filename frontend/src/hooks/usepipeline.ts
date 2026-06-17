@@ -82,7 +82,7 @@ export function usePipeline(): UsePipelineReturn {
   const fetchModels = useCallback(async () => {
     setModelError('');
     try {
-      // Try Lychee/Ollama /api/tags endpoint first (matches useLychee.ts)
+      // Try Lychee /api/tags endpoint first (matches useLychee.ts)
       let res = await fetch(`${API_BASE}/api/tags`, {
         signal: AbortSignal.timeout(5000),
       });
