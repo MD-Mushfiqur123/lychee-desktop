@@ -2,29 +2,69 @@
 
 > The native desktop UI for Lychee — chat, pipeline builder, model manager
 
+[![GitHub Stars](https://img.shields.io/github/stars/MD-Mushfiqur123/lychee-desktop?style=social)](https://github.com/MD-Mushfiqur123/lychee-desktop/stargazers)
+[![Discord](https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white)](https://discord.gg/lychee-dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 Lychee Desktop is a [Wails](https://wails.io) desktop application that wraps the Lychee AI platform in a native window. Manage models, build pipelines, and chat — all from your desktop.
+
+---
 
 ## Features
 
-- **Native Desktop Shell** — Runs Lychee in a dedicated window
-- **Chat Interface** — Full Lychee chat experience with streaming responses
-- **Pipeline Builder (Studio)** — Visual pipeline construction and management
-- **Model Manager** — Switch between models, configure parameters, view status
-- **Process Lifecycle** — Automatically starts/stops `lychee serve` with the desktop app
-- **Windows Installer** — One-command install with Start Menu, Desktop shortcuts & auto-start
-- **Cross-Platform** — Windows, macOS, and Linux support via Wails
+| Feature | Description |
+|---------|-------------|
+| 💬 **Chat** | Full Lychee chat with streaming responses |
+| 🔧 **Pipeline Studio** | Visual drag-and-drop pipeline builder |
+| 🤖 **Model Manager** | Switch models, configure parameters, view status |
+| ⚙️ **Settings** | Configure backends, API keys, and app preferences |
+| 📤 **Export/Import** | Share pipelines as JSON files — export, import, or send to teammates |
+| 🔄 **Auto-Start Server** | Automatically starts/stops `lychee serve` with the desktop app |
+| ⌨️ **Keyboard Shortcuts** | Quick actions for chat, navigation, and pipeline operations |
+| 🖥️ **Native Window** | Dedicated desktop window — no browser tabs needed |
+| 📦 **Windows Installer** | One-command install with Start Menu, Desktop shortcuts & auto-start |
 
-## Screenshot
+### Keyboard Shortcuts
 
-![Lychee Desktop](docs/screenshot.png)
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl + N` | New chat |
+| `Ctrl + Shift + P` | Open Pipeline Studio |
+| `Ctrl + ,` | Open Settings |
+| `Ctrl + R` | Refresh / reconnect |
+| `F5` | Refresh page |
 
-*Screenshot coming soon*
+---
+
+## Screenshots
+
+<!-- Replace with actual screenshots -->
+
+| Chat | Pipeline Studio | Model Manager |
+|:----:|:---------------:|:-------------:|
+| ![Chat](docs/screenshots/chat.png) | ![Studio](docs/screenshots/studio.png) | ![Models](docs/screenshots/models.png) |
+
+*Screenshots coming soon — PRs welcome!*
+
+---
 
 ## Quick Start
 
-### Download (Recommended)
+### Download
 
-Get the latest `.exe` from [Releases](https://github.com/lychee-dev/lychee-desktop/releases).
+**[⬇️ Download Latest Release](https://github.com/MD-Mushfiqur123/lychee-desktop/releases/latest)**
+
+Grab the `.exe` for Windows, or the macOS/Linux binary from [Releases](https://github.com/MD-Mushfiqur123/lychee-desktop/releases).
+
+### Launch
+
+Double-click `launch.bat` or run:
+
+```cmd
+scripts\launch.bat
+```
+
+This starts `lychee serve` automatically, then opens Lychee Desktop. Closing the window stops the server.
 
 ### Windows Installer
 
@@ -36,63 +76,53 @@ Get the latest `.exe` from [Releases](https://github.com/lychee-dev/lychee-deskt
 .\scripts\installer.ps1
 ```
 
-### Double-click Launch
-
-```cmd
-scripts\launch.bat
-```
-
-Starts `lychee serve` + Lychee Desktop automatically.
+Installs to `%LOCALAPPDATA%\Programs\lychee-desktop` with Start Menu shortcut and auto-start on login.
 
 ---
 
-## Installation
+## Build from Source
 
 ### Prerequisites
 
 - [Go](https://go.dev/dl/) 1.21+
 - [Node.js](https://nodejs.org/) 18+
 - [Wails CLI](https://wails.io/docs/gettingstarted/installation): `go install github.com/wailsapp/wails/v2/cmd/wails@latest`
-- [Lychee](https://github.com/lychee-dev/lychee) — the core backend
+- [Lychee](https://github.com/lychee-dev/lychee) — the core backend (optional; only needed to run, not to build)
 
-### Build from Source
+### Build
 
 ```bash
-# Clone the repo
-git clone https://github.com/lychee-dev/lychee-desktop.git
+# Clone
+git clone https://github.com/MD-Mushfiqur123/lychee-desktop.git
 cd lychee-desktop
 
-# Install frontend dependencies
+# Install frontend deps
 cd frontend && npm install && cd ..
 
-# Build the desktop app
+# Build
 wails build
 ```
 
-The built binary will be in `build/bin/lychee-desktop.exe` (Windows), `build/bin/lychee-desktop` (macOS/Linux).
+Binary output:
 
-## Development
+| Platform  | Path |
+|-----------|------|
+| Windows   | `build/bin/lychee-desktop.exe` |
+| macOS     | `build/bin/lychee-desktop` |
+| Linux     | `build/bin/lychee-desktop` |
+
+### Dev Mode (hot reload)
 
 ```bash
-# Start live development with hot reload
 wails dev
 ```
 
-This starts:
-- A Vite dev server for the React frontend (hot reload)
-- The Go backend with your bound methods
-- A Wails dev server at http://localhost:34115 for browser debugging
+Starts:
+- Vite dev server for the React frontend (hot reload)
+- Go backend with bound methods
+- Wails dev server at `http://localhost:34115` for browser debugging
 
-### Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `scripts/build.ps1` | Build with Wails |
-| `scripts/dev.ps1` | Start dev mode with hot reload |
-| `scripts/installer.ps1` | Windows installer (copies exe, creates shortcuts, auto-start) |
-| `scripts/start-with-lychee.ps1` | Managed launch — starts lychee serve, waits for API, launches desktop, auto-stops on close |
-| `scripts/launch.bat` | Simple double-click batch launcher |
-| `scripts/generate-icon.js` | Generate 256×256 PNG app icon |
+---
 
 ## Architecture
 
@@ -110,68 +140,65 @@ lychee-desktop/
 │   └── package.json
 ├── build/               # Build assets
 │   ├── appicon.png      # App icon (256×256 PNG)
-│   ├── appicon.svg      # App icon (SVG source)
-│   └── windows/         # Windows-specific (icon.ico, manifest, installer NSIS)
+│   └── windows/         # Windows-specific (icon.ico, manifest, NSIS installer)
 ├── scripts/             # Utility scripts
+│   ├── build.ps1        # Build wrapper
+│   ├── dev.ps1          # Dev mode launcher
+│   ├── launch.bat       # Double-click launcher
+│   ├── installer.ps1    # Windows installer
+│   └── start-with-lychee.ps1  # Managed lifecycle launcher
 └── .github/workflows/   # CI/CD
     └── build-desktop.yml
 ```
 
 ## How It Works
 
-1. Lychee Desktop launches and optionally starts a local `lychee serve` process in the background
-2. The embedded webview loads the Lychee web UI
-3. Go ↔ JS bindings manage the lychee process lifecycle (start, stop, health check)
-4. Closing the desktop window also stops the lychee process
-5. Use `scripts/start-with-lychee.ps1` for managed lifecycle with auto-stop
+1. Desktop app launches and starts `lychee serve` in the background
+2. Embedded webview loads the Lychee web UI
+3. Go ↔ JS bindings manage process lifecycle (start, stop, health check)
+4. Closing the desktop window gracefully stops the lychee process
+
+---
 
 ## CI/CD
 
-GitHub Actions builds are configured in `.github/workflows/build-desktop.yml`:
+GitHub Actions in `.github/workflows/build-desktop.yml`:
 - Builds on every push to `main`
 - Uploads `lychee-desktop.exe` as an artifact
-- Auto-attaches builds to GitHub Releases on tag
+- Auto-attaches builds to GitHub Releases on tag push
+
+---
 
 ## Documentation
 
 - **[USAGE.md](USAGE.md)** — Full usage guide: chat, Studio, model management, troubleshooting
 
+---
+
 ## Community
-
-<div align="center">
-
-[![GitHub Stars](https://img.shields.io/github/stars/MD-Mushfiqur123/lychee-desktop?style=social)](https://github.com/MD-Mushfiqur123/lychee-desktop/stargazers)
-[![Discord](https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white)](https://discord.gg/lychee-dev)
-[![GitHub Discussions](https://img.shields.io/badge/GitHub-Discussions-181717?logo=github)](https://github.com/MD-Mushfiqur123/lychee-desktop/discussions)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
-
-</div>
 
 | Channel | Purpose |
 |---------|---------|
-| 💬 **Discord** | Real-time chat, community help, showcase your projects — [Join here](https://discord.gg/lychee-dev) |
-| 🗣️ **GitHub Discussions** | Ask questions, share ideas, discuss features — [Start a discussion](https://github.com/MD-Mushfiqur123/lychee-desktop/discussions) |
-| 📝 **Contributing Guide** | Setup, project structure, code style, PR workflow — [CONTRIBUTING.md](CONTRIBUTING.md) |
-| 📜 **Code of Conduct** | Community standards and expectations — [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) |
+| 💬 **Discord** | Real-time chat, community help, showcase — [Join](https://discord.gg/lychee-dev) |
+| 🗣️ **Discussions** | Questions, ideas, feature discussion — [Start one](https://github.com/MD-Mushfiqur123/lychee-desktop/discussions) |
+| 📝 **Contributing** | Setup, code style, PR workflow — [CONTRIBUTING.md](CONTRIBUTING.md) |
+| 📜 **Code of Conduct** | Community standards — [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) |
+
+---
+
+## Related Projects
+
+| Project | Description |
+|---------|-------------|
+| 🍒 **Lychee CLI** | Core orchestration for local LLMs — [repo](https://github.com/MD-Mushfiqur123/lychee) |
+| 🌐 **Landing Page** | Official project website — [site](https://md-mushfiqur123.github.io/lychee-landing-page) |
+| 📖 **Lychee Docs** | Full documentation (VitePress) — [docs](https://md-mushfiqur123.github.io/lychee-docs/) |
 
 ---
 
 ## License
 
 MIT © Lychee Tech
-
----
-
-## 🔗 Related Projects
-
-| Project | Description | Link |
-|---------|-------------|------|
-| 🍒 **Lychee CLI** | Core orchestration layer for local LLMs | [github.com/MD-Mushfiqur123/lychee](https://github.com/MD-Mushfiqur123/lychee) |
-| 🌐 **Lychee Landing Page** | Official project website & showcase | [md-mushfiqur123.github.io/lychee-landing-page](https://md-mushfiqur123.github.io/lychee-landing-page) |
-| 📖 **Lychee Docs** | Full documentation (VitePress) | [md-mushfiqur123.github.io/lychee-docs](https://md-mushfiqur123.github.io/lychee-docs/) |
-
-> 💡 **Looking for the CLI?** → [github.com/MD-Mushfiqur123/lychee](https://github.com/MD-Mushfiqur123/lychee)  
-> 🌐 **Looking for the website?** → [md-mushfiqur123.github.io/lychee-landing-page](https://md-mushfiqur123.github.io/lychee-landing-page)
 
 ---
 
