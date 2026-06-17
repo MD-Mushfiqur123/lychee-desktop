@@ -117,11 +117,33 @@ export default function Chat() {
   }, [input, selectedModel, streaming, messages, sendMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // Ctrl+Enter: Send
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleSend();
+      return;
     }
+    // Enter alone: new line (default textarea behavior)
   };
+
+  // Additional keyboard shortcuts (Ctrl+K focus, Ctrl+L clear)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const ctrl = e.ctrlKey || e.metaKey;
+      if (ctrl && e.key === 'k') {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+      if (ctrl && e.key === 'l') {
+        e.preventDefault();
+        setMessages([]);
+        setStreamContent('');
+        setError(null);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleStop = () => {
     cancelRequest();
@@ -246,7 +268,7 @@ export default function Chat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message... (Enter to send, Shift+Enter for new line)"
+          placeholder="Type a message... (Ctrl+Enter to send, Enter for new line)"
           rows={1}
           disabled={!selectedModel}
         />

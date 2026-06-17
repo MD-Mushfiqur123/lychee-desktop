@@ -70,10 +70,11 @@ const tabs: TabDef[] = [
 interface LayoutProps {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
+  onShowShortcuts?: () => void;
   children: ReactNode;
 }
 
-export default function Layout({ activeTab, onTabChange, children }: LayoutProps) {
+export default function Layout({ activeTab, onTabChange, onShowShortcuts, children }: LayoutProps) {
   return (
     <div className="layout">
       {/* Desktop Sidebar */}
@@ -104,6 +105,20 @@ export default function Layout({ activeTab, onTabChange, children }: LayoutProps
         </div>
 
         <div className="sidebar-footer">
+          {onShowShortcuts && (
+            <button
+              className="sidebar-help-btn"
+              onClick={onShowShortcuts}
+              title="Keyboard Shortcuts (?)"
+              aria-label="Keyboard Shortcuts"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </button>
+          )}
           <div className="sidebar-version">v0.1</div>
         </div>
       </nav>

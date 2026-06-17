@@ -1,4 +1,4 @@
-import { type PipelineStage as PipelineStageType, type StageStatus, type ModelInfo } from '../hooks/usePipeline';
+import { type PipelineStage as PipelineStageType, type StageStatus, type ModelInfo } from '../hooks/usepipeline';
 
 interface PipelineStageProps {
   stage: PipelineStageType;

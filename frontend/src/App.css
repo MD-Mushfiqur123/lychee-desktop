@@ -1,5 +1,5 @@
 /* ============================================================
-   Lychee Desktop — Dark Theme
+   Lychee Desktop — Dark Theme (default) + Light Theme
    Consolidated: Animations, Responsive, Polish, StatusBar
    ============================================================ */
 
@@ -37,6 +37,70 @@
     Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas',
     'SF Mono', monospace;
+}
+
+/* ---- Light Theme Overrides ---- */
+[data-theme="light"] {
+  --bg-primary: #f8f9fb;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f0f2f5;
+  --bg-input: #f0f2f5;
+  --bg-sidebar: #eef0f4;
+  --border-color: #d4d7dc;
+  --border-light: #c8ccd1;
+  --border-accent: rgba(59, 130, 246, 0.25);
+  --text-primary: #1a1c24;
+  --text-secondary: #4b5563;
+  --text-muted: #8b95a1;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-subtle: rgba(59, 130, 246, 0.08);
+  --accent-glow: rgba(59, 130, 246, 0.15);
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --danger-subtle: rgba(220, 38, 38, 0.06);
+  --success: #16a34a;
+  --success-glow: rgba(22, 163, 74, 0.25);
+  --warning: #d97706;
+}
+
+[data-theme="light"] .message-row.user .message-bubble {
+  color: #fff;
+}
+
+[data-theme="light"] .message-content pre {
+  background: #f0f2f5;
+  border-color: #d4d7dc;
+  color: #1a1c24;
+}
+
+[data-theme="light"] .message-content code {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .message-row.user .message-content code {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="light"] .statusbar {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="light"] .sidebar-tab:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .sidebar-tab.active {
+  background: var(--accent-subtle);
+}
+
+[data-theme="light"] .mm-tag {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .stage-output {
+  background: rgba(0, 0, 0, 0.03);
 }
 
 /* ---- Reset ---- */
@@ -2050,6 +2114,231 @@ html, body, #root {
 /* ============================================================
    UTILITIES
    ============================================================ */
+/* ---- Keyboard Shortcuts Modal ---- */
+.ks-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 200ms ease;
+}
+
+.ks-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 640px;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  animation: slideUp 250ms ease-out;
+}
+
+.ks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.ks-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.ks-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ks-close-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-input);
+}
+
+.ks-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.ks-group {
+  margin-bottom: 24px;
+}
+
+.ks-group:last-child {
+  margin-bottom: 0;
+}
+
+.ks-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+  padding-left: 2px;
+}
+
+.ks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ks-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+}
+
+.ks-row:hover {
+  background: var(--bg-card-hover);
+}
+
+.ks-keys {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ks-plus {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 0 2px;
+}
+
+.ks-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 24px;
+  padding: 0 6px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1;
+  box-shadow: 0 1px 0 var(--border-color);
+}
+
+.ks-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-left: 16px;
+  text-align: right;
+}
+
+.ks-footer {
+  padding: 12px 24px;
+  border-top: 1px solid var(--border-color);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.ks-footer .ks-kbd {
+  font-size: 10px;
+  min-width: 20px;
+  height: 20px;
+}
+
+/* ---- Theme Toggle in Settings ---- */
+.theme-toggle-group {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  overflow: hidden;
+  width: 100%;
+}
+
+.theme-toggle-btn {
+  flex: 1;
+  padding: 10px 12px;
+  background: var(--bg-input);
+  border: none;
+  border-right: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+
+.theme-toggle-btn:last-child {
+  border-right: none;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.theme-toggle-btn.active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ---- Shortcuts help button in sidebar ---- */
+.sidebar-help-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+  margin-bottom: 2px;
+  border-radius: var(--radius);
+}
+
+.sidebar-help-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] .sidebar-help-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

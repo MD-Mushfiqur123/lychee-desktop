@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import type { Theme } from '../useTheme';
 
 interface SystemInfo {
   platform: string;
@@ -7,7 +8,18 @@ interface SystemInfo {
   memory: string;
 }
 
-export default function Settings() {
+interface SettingsProps {
+  theme: Theme;
+  onThemeChange: (t: Theme) => void;
+}
+
+const themeOptions: { value: Theme; label: string; icon: string }[] = [
+  { value: 'dark', label: 'Dark', icon: '🌙' },
+  { value: 'light', label: 'Light', icon: '☀️' },
+  { value: 'system', label: 'System', icon: '💻' },
+];
+
+export default function Settings({ theme, onThemeChange }: SettingsProps) {
   const [binaryPath, setBinaryPath] = useState('lychee');
   const [port, setPort] = useState('11434');
   const [backend, setBackend] = useState('llama.cpp');
@@ -87,6 +99,29 @@ export default function Settings() {
       </div>
 
       <div className="settings-grid">
+        {/* Appearance / Theme */}
+        <div className="settings-section">
+          <h3 className="section-title">Appearance</h3>
+          <div className="settings-card">
+            <label className="settings-label">Theme</label>
+            <div className="theme-toggle-group">
+              {themeOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  className={`theme-toggle-btn ${theme === opt.value ? 'active' : ''}`}
+                  onClick={() => onThemeChange(opt.value)}
+                  title={opt.label}
+                >
+                  {opt.icon} {opt.label}
+                </button>
+              ))}
+            </div>
+            <span className="settings-hint">
+              Dark, Light, or follow your system preference. Toggle with Ctrl+Shift+T.
+            </span>
+          </div>
+        </div>
+
         {/* Status */}
         <div className="settings-section">
           <h3 className="section-title">Server Status</h3>
