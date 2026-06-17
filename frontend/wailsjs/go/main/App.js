@@ -18,12 +18,24 @@ export function GetLycheeStatus() {
   return window['go']['main']['App']['GetLycheeStatus']();
 }
 
+export function GetOAuthConfig(arg1) {
+  return window['go']['main']['App']['GetOAuthConfig'](arg1);
+}
+
+export function HandleOAuthCallback(arg1, arg2) {
+  return window['go']['main']['App']['HandleOAuthCallback'](arg1, arg2);
+}
+
 export function ImportPipeline() {
   return window['go']['main']['App']['ImportPipeline']();
 }
 
 export function IsLycheeRunning() {
   return window['go']['main']['App']['IsLycheeRunning']();
+}
+
+export function Login(arg1) {
+  return window['go']['main']['App']['Login'](arg1);
 }
 
 export function StartLychee(arg1) {

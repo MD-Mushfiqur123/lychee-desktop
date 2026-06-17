@@ -9,9 +9,15 @@ export function GetLycheePath():Promise<string>;
 
 export function GetLycheeStatus():Promise<Record<string, any>>;
 
+export function GetOAuthConfig(arg1:string):Promise<Record<string, string>>;
+
+export function HandleOAuthCallback(arg1:string,arg2:string):Promise<Record<string, any>>;
+
 export function ImportPipeline():Promise<string>;
 
 export function IsLycheeRunning():Promise<boolean>;
+
+export function Login(arg1:string):Promise<string>;
 
 export function StartLychee(arg1:string):Promise<void>;
 

@@ -6,20 +6,10 @@ import Studio from './components/Studio';
 import ModelManager from './components/ModelManager';
 import Settings from './components/Settings';
 import KeyboardShortcuts from './components/KeyboardShortcuts';
+import Login from './components/login';
 import { useTheme } from './useTheme';
+import { useAuth } from './useauth';
 import './App.css';
-
-async function callBackend(method: string, ...args: any[]): Promise<any> {
-  try {
-    const w = window as any;
-    if (w['go']?.main?.App?.[method]) {
-      return await w['go']['main']['App'][method](...args);
-    }
-  } catch {
-    // Not running inside Wails — that's fine
-  }
-  return null;
-}
 
 const TAB_NUMBER_MAP: Record<string, TabId> = {
   '1': 'home',
@@ -33,14 +23,18 @@ function App() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const { theme, setTheme, cycleTheme } = useTheme();
+  const { user, loading, error, isLoggedIn, login, logout } = useAuth();
 
   // Auto-start Lychee on app startup
   useEffect(() => {
     async function autoStart() {
       try {
-        const result = await callBackend('AutoStartLychee');
-        if (result) {
-          console.log('[lychee-desktop]', result);
+        const w = window as any;
+        if (w['go']?.main?.App?.AutoStartLychee) {
+          const result = await w['go']['main']['App']['AutoStartLychee']();
+          if (result) {
+            console.log('[lychee-desktop]', result);
+          }
         }
       } catch {
         // Silently ignore — the useLychee hook will handle UI-level retry
@@ -118,12 +112,19 @@ function App() {
     }
   };
 
+  // Show login screen if not authenticated
+  if (!isLoggedIn) {
+    return <Login onLogin={login} loading={loading} error={error} />;
+  }
+
   return (
     <>
       <Layout
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onShowShortcuts={() => setShortcutsOpen(true)}
+        user={user}
+        onLogout={logout}
       >
         {renderContent()}
       </Layout>

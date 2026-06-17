@@ -1,5 +1,7 @@
 import { ReactNode } from 'react';
 import StatusBar from './StatusBar';
+import { UserInfo } from './login';
+import type { AuthUser } from '../useauth';
 
 export type TabId = 'home' | 'chat' | 'studio' | 'models' | 'settings';
 
@@ -72,9 +74,18 @@ interface LayoutProps {
   onTabChange: (tab: TabId) => void;
   onShowShortcuts?: () => void;
   children: ReactNode;
+  user?: AuthUser | null;
+  onLogout?: () => void;
 }
 
-export default function Layout({ activeTab, onTabChange, onShowShortcuts, children }: LayoutProps) {
+export default function Layout({
+  activeTab,
+  onTabChange,
+  onShowShortcuts,
+  children,
+  user,
+  onLogout,
+}: LayoutProps) {
   return (
     <div className="layout">
       {/* Desktop Sidebar */}
@@ -105,6 +116,11 @@ export default function Layout({ activeTab, onTabChange, onShowShortcuts, childr
         </div>
 
         <div className="sidebar-footer">
+          {user && onLogout && (
+            <div className="sidebar-user">
+              <UserInfo user={user} onLogout={onLogout} />
+            </div>
+          )}
           {onShowShortcuts && (
             <button
               className="sidebar-help-btn"

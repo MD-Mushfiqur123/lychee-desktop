@@ -4,9 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,15 +40,55 @@ type PipelineExport struct {
 	Connections []PipelineConnection `json:"connections"`
 }
 
+// oauthState holds the active OAuth login session state
+type oauthState struct {
+	listener    net.Listener
+	redirectURI string
+}
+
+// OAuth provider configurations (use placeholder values — configure later)
+var oauthConfigs = map[string]map[string]string{
+	"google": {
+		"client_id":     "YOUR_GOOGLE_CLIENT_ID",
+		"client_secret": "YOUR_GOOGLE_CLIENT_SECRET",
+		"auth_url":      "https://accounts.google.com/o/oauth2/v2/auth",
+		"token_url":     "https://oauth2.googleapis.com/token",
+		"userinfo_url":  "https://www.googleapis.com/oauth2/v2/userinfo",
+		"scope":         "email profile",
+	},
+	"microsoft": {
+		"client_id":     "YOUR_MICROSOFT_CLIENT_ID",
+		"client_secret": "YOUR_MICROSOFT_CLIENT_SECRET",
+		"auth_url":      "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+		"token_url":     "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+		"userinfo_url":  "https://graph.microsoft.com/v1.0/me",
+		"scope":         "User.Read",
+	},
+	"github": {
+		"client_id":     "YOUR_GITHUB_CLIENT_ID",
+		"client_secret": "YOUR_GITHUB_CLIENT_SECRET",
+		"auth_url":      "https://github.com/login/oauth/authorize",
+		"token_url":     "https://github.com/login/oauth/access_token",
+		"userinfo_url":  "https://api.github.com/user",
+		"scope":         "user:email",
+	},
+}
+
 type App struct {
 	ctx        context.Context
 	cmd        *exec.Cmd
 	mu         sync.Mutex
 	lycheePath string
+
+	// OAuth state
+	oauthMu     sync.Mutex
+	oauthStates map[string]*oauthState
 }
 
 func NewApp() *App {
-	return &App{}
+	return &App{
+		oauthStates: make(map[string]*oauthState),
+	}
 }
 
 func (a *App) startup(ctx context.Context) {
@@ -55,6 +99,14 @@ func (a *App) shutdown(ctx context.Context) {
 	if a.cmd != nil {
 		a.cmd.Process.Kill()
 	}
+	// Clean up any active OAuth listeners
+	a.oauthMu.Lock()
+	for _, state := range a.oauthStates {
+		if state.listener != nil {
+			state.listener.Close()
+		}
+	}
+	a.oauthMu.Unlock()
 }
 
 // StartLychee starts the Lychee serve process
@@ -279,4 +331,256 @@ func (a *App) GetLycheeStatus() map[string]interface{} {
 		"error":          "",
 		"managedProcess": managedRunning,
 	}
+}
+
+// Login starts the OAuth login flow for the given provider.
+// It starts a local HTTP server on a random port to receive the OAuth callback,
+// generates the authorization URL, opens the browser, and returns the auth URL.
+func (a *App) Login(provider string) string {
+	config, ok := oauthConfigs[provider]
+	if !ok {
+		return fmt.Sprintf(`{"error": "unknown provider: %s"}`, provider)
+	}
+
+	// Start a local HTTP server on a random port
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return fmt.Sprintf(`{"error": "failed to start local server: %v"}`, err)
+	}
+
+	port := listener.Addr().(*net.TCPAddr).Port
+	redirectURI := fmt.Sprintf("http://localhost:%d/callback", port)
+
+	// Store the active OAuth state
+	a.oauthMu.Lock()
+	a.oauthStates[provider] = &oauthState{
+		listener:    listener,
+		redirectURI: redirectURI,
+	}
+	a.oauthMu.Unlock()
+
+	// Build the OAuth authorization URL
+	authURL := fmt.Sprintf("%s?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s",
+		config["auth_url"],
+		config["client_id"],
+		url.QueryEscape(redirectURI),
+		url.QueryEscape(config["scope"]),
+		provider,
+	)
+
+	// Signal to shut down the server on completion or timeout
+	done := make(chan struct{})
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
+		codeParam := r.URL.Query().Get("code")
+		errParam := r.URL.Query().Get("error")
+
+		if errParam != "" {
+			errDesc := r.URL.Query().Get("error_description")
+			runtime.EventsEmit(a.ctx, "oauth:error", map[string]interface{}{
+				"provider":    provider,
+				"error":       errParam,
+				"description": errDesc,
+			})
+			w.Header().Set("Content-Type", "text/html")
+			w.Write([]byte(fmt.Sprintf(
+				`<html><body><h1>Login failed</h1><p>%s: %s</p><script>setTimeout(function(){window.close()},3000)</script></body></html>`,
+				errParam, errDesc)))
+			close(done)
+			return
+		}
+
+		if codeParam == "" {
+			http.Error(w, "missing authorization code", http.StatusBadRequest)
+			return
+		}
+
+		// Exchange code and emit result
+		result := a.HandleOAuthCallback(codeParam, provider)
+		runtime.EventsEmit(a.ctx, "oauth:complete", result)
+
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(`<html><body><h1>Login successful!</h1><p>You can close this window.</p><script>window.close()</script></body></html>`))
+		close(done)
+	})
+
+	server := &http.Server{Handler: mux}
+
+	go func() {
+		server.Serve(listener)
+	}()
+
+	// Auto-shutdown after 5 minutes or when callback completes
+	go func() {
+		select {
+		case <-done:
+		case <-time.After(5 * time.Minute):
+		}
+		server.Close()
+		// Clean up state
+		a.oauthMu.Lock()
+		delete(a.oauthStates, provider)
+		a.oauthMu.Unlock()
+	}()
+
+	// Open browser to the authorization URL
+	runtime.BrowserOpenURL(a.ctx, authURL)
+
+	return authURL
+}
+
+// HandleOAuthCallback exchanges the authorization code for an access token
+// and fetches user information from the provider's API.
+func (a *App) HandleOAuthCallback(code string, provider string) map[string]interface{} {
+	config, ok := oauthConfigs[provider]
+	if !ok {
+		return map[string]interface{}{"error": fmt.Sprintf("unknown provider: %s", provider)}
+	}
+
+	// Look up the active OAuth state for the redirect URI
+	a.oauthMu.Lock()
+	state, hasState := a.oauthStates[provider]
+	a.oauthMu.Unlock()
+
+	redirectURI := ""
+	if hasState && state != nil {
+		redirectURI = state.redirectURI
+	}
+
+	// Exchange authorization code for access token
+	accessToken, err := exchangeCode(code, config, redirectURI)
+	if err != nil {
+		return map[string]interface{}{
+			"provider": provider,
+			"error":    fmt.Sprintf("token exchange failed: %v", err),
+		}
+	}
+
+	// Fetch user info with the access token
+	userData, err := fetchUserInfo(accessToken, config["userinfo_url"], provider)
+	if err != nil {
+		return map[string]interface{}{
+			"provider": provider,
+			"error":    fmt.Sprintf("user info fetch failed: %v", err),
+		}
+	}
+
+	return map[string]interface{}{
+		"provider": provider,
+		"user":     userData,
+	}
+}
+
+// GetOAuthConfig returns the OAuth configuration for a provider
+// (client_id, scope, auth_url) for display in the frontend.
+func (a *App) GetOAuthConfig(provider string) map[string]string {
+	config, ok := oauthConfigs[provider]
+	if !ok {
+		return map[string]string{"error": fmt.Sprintf("unknown provider: %s", provider)}
+	}
+
+	return map[string]string{
+		"provider":  provider,
+		"client_id": config["client_id"],
+		"auth_url":  config["auth_url"],
+		"scope":     config["scope"],
+		"token_url": config["token_url"],
+	}
+}
+
+// exchangeCode exchanges an OAuth authorization code for an access token.
+func exchangeCode(code string, config map[string]string, redirectURI string) (string, error) {
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	data := url.Values{
+		"client_id":     {config["client_id"]},
+		"client_secret": {config["client_secret"]},
+		"code":          {code},
+		"redirect_uri":  {redirectURI},
+		"grant_type":    {"authorization_code"},
+	}
+
+	req, err := http.NewRequest("POST", config["token_url"], strings.NewReader(data.Encode()))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	// Try JSON parsing first (Google, Microsoft)
+	var tokenResp map[string]interface{}
+	if err := json.Unmarshal(body, &tokenResp); err == nil {
+		if accessToken, ok := tokenResp["access_token"].(string); ok {
+			return accessToken, nil
+		}
+		if errDesc, ok := tokenResp["error_description"].(string); ok {
+			return "", fmt.Errorf("%s", errDesc)
+		}
+		return "", fmt.Errorf("no access_token in response: %s", string(body))
+	}
+
+	// Try URL-encoded parsing (GitHub returns form-encoded)
+	values, err := url.ParseQuery(string(body))
+	if err == nil {
+		if accessToken := values.Get("access_token"); accessToken != "" {
+			return accessToken, nil
+		}
+		if errDesc := values.Get("error_description"); errDesc != "" {
+			return "", fmt.Errorf("%s", errDesc)
+		}
+	}
+
+	return "", fmt.Errorf("failed to parse token response: %s", string(body))
+}
+
+// fetchUserInfo fetches authenticated user information from the provider's API.
+func fetchUserInfo(accessToken string, userinfoURL string, provider string) (map[string]interface{}, error) {
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	req, err := http.NewRequest("GET", userinfoURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Accept", "application/json")
+
+	// GitHub requires a User-Agent header per their API policy
+	if provider == "github" {
+		req.Header.Set("User-Agent", "Lychee-Desktop")
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("userinfo request failed (HTTP %d): %s", resp.StatusCode, string(body))
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse userinfo response: %w", err)
+	}
+
+	return result, nil
 }
