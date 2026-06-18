@@ -120,6 +120,13 @@ html, body, #root {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
+  /* Smooth scroll for chat and content areas */
+  scroll-behavior: smooth;
+}
+
+/* ---- Prevent white flash on route transitions ---- */
+body {
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 /* ============================================================
@@ -225,17 +232,23 @@ html, body, #root {
   cursor: pointer;
   transition: all var(--transition);
   position: relative;
+  transform-origin: center;
 }
 
 .sidebar-tab:hover {
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.06);
-  transform: scale(1.02);
+  transform: scale(1.05);
+}
+
+.sidebar-tab:active {
+  transform: scale(0.95);
 }
 
 .sidebar-tab.active {
   color: var(--accent);
   background: var(--accent-subtle);
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.15);
 }
 
 .sidebar-tab.active::before {
@@ -248,6 +261,8 @@ html, body, #root {
   height: 18px;
   background: var(--accent);
   border-radius: 0 3px 3px 0;
+  box-shadow: 0 0 8px var(--accent-glow);
+  animation: fadeIn 200ms ease;
 }
 
 .sidebar-footer {
@@ -382,8 +397,19 @@ html, body, #root {
    TAB TRANSITIONS
    ============================================================ */
 .tab-content {
-  animation: fadeIn 300ms ease;
+  animation: fadeIn 300ms ease, slideUp 250ms ease-out;
 }
+
+/* Smooth page content entry — staggered children */
+.tab-content > * {
+  animation: fadeIn 200ms ease both;
+}
+
+.tab-content > *:nth-child(1) { animation-delay: 30ms; }
+.tab-content > *:nth-child(2) { animation-delay: 80ms; }
+.tab-content > *:nth-child(3) { animation-delay: 130ms; }
+.tab-content > *:nth-child(4) { animation-delay: 180ms; }
+.tab-content > *:nth-child(n+5) { animation-delay: 200ms; }
 
 /* ============================================================
    MESSAGE ANIMATIONS
@@ -621,7 +647,8 @@ html, body, #root {
 /* Message Rows */
 .message-row {
   display: flex;
-  padding: 3px 0;
+  padding: 6px 0;
+  transition: background var(--transition);
 }
 
 .message-row.user {
@@ -642,24 +669,35 @@ html, body, #root {
 
 .message-bubble {
   max-width: 100%;
-  padding: 12px 16px;
+  padding: 14px 18px;
   border-radius: var(--radius-lg);
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.65;
   word-wrap: break-word;
   overflow-wrap: break-word;
+  transition: box-shadow var(--transition);
 }
 
 .message-row.user .message-bubble {
   background: var(--accent);
   color: #fff;
   border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+.message-row.user .message-bubble:hover {
+  box-shadow: 0 4px 16px var(--accent-glow);
 }
 
 .message-row.assistant .message-bubble {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-bottom-left-radius: 4px;
+}
+
+.message-row.assistant .message-bubble:hover {
+  border-color: var(--border-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .message-row.system .message-bubble {
@@ -773,6 +811,17 @@ html, body, #root {
   gap: 12px;
   align-items: flex-end;
   flex-shrink: 0;
+  background: var(--bg-primary);
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+}
+
+.chat-input-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
 }
 
 .chat-input {
@@ -789,16 +838,29 @@ html, body, #root {
   line-height: 1.5;
   min-height: 46px;
   max-height: 200px;
-  transition: border-color var(--transition), box-shadow var(--transition);
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+  width: 100%;
+}
+
+.chat-input:hover {
+  border-color: var(--border-light);
+  background: var(--bg-card-hover);
 }
 
 .chat-input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-subtle);
+  box-shadow: 0 0 0 2px var(--accent-subtle), 0 0 20px var(--accent-glow);
+  background: var(--bg-input);
 }
 
 .chat-input::placeholder {
   color: var(--text-muted);
+  opacity: 0.7;
+  transition: opacity var(--transition);
+}
+
+.chat-input:focus::placeholder {
+  opacity: 0.4;
 }
 
 .chat-input:disabled {
@@ -822,31 +884,47 @@ html, body, #root {
   cursor: pointer;
   transition: all var(--transition);
   font-family: inherit;
+  position: relative;
+  overflow: hidden;
 }
 
 .btn-send {
   background: var(--accent);
   color: #fff;
+  box-shadow: 0 2px 8px var(--accent-glow);
 }
 
 .btn-send:hover:not(:disabled) {
   background: var(--accent-hover);
-  transform: scale(1.02);
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+.btn-send:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
 }
 
 .btn-send:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .btn-stop {
   background: var(--danger);
   color: #fff;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+  animation: pulseGlow 1.6s ease-in-out infinite;
 }
 
 .btn-stop:hover {
   background: var(--danger-hover);
-  transform: scale(1.02);
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35);
+}
+
+.btn-stop:active {
+  transform: translateY(0) scale(0.98);
 }
 
 /* Model Selector */
@@ -867,7 +945,7 @@ html, body, #root {
   cursor: pointer;
   font-family: inherit;
   min-width: 200px;
-  transition: border-color var(--transition);
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
   appearance: none;
   -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
@@ -878,16 +956,23 @@ html, body, #root {
 
 .model-select:hover {
   border-color: var(--border-light);
+  background: var(--bg-card-hover);
 }
 
 .model-select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-subtle);
+  box-shadow: 0 0 0 2px var(--accent-subtle), 0 0 12px var(--accent-glow);
 }
 
 .model-select:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.model-select option {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  padding: 8px;
 }
 
 .model-error {
@@ -2135,7 +2220,12 @@ html, body, #root {
   flex-direction: column;
   gap: 24px;
   animation: slideUp 350ms ease-out;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 0 0 1px var(--border-color);
+  transition: box-shadow var(--transition);
+}
+
+.login-card:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--border-light);
 }
 
 .login-header {
@@ -2223,17 +2313,20 @@ html, body, #root {
 
 .login-btn-google:hover:not(:disabled) {
   border-color: #4285F4;
-  background: rgba(66, 133, 244, 0.06);
+  background: rgba(66, 133, 244, 0.08);
+  box-shadow: 0 0 12px rgba(66, 133, 244, 0.15);
 }
 
 .login-btn-microsoft:hover:not(:disabled) {
-  border-color: #00A4EF;
-  background: rgba(0, 164, 239, 0.06);
+  border-color: #2F2F2F;
+  background: rgba(47, 47, 47, 0.08);
+  box-shadow: 0 0 12px rgba(47, 47, 47, 0.12);
 }
 
 .login-btn-github:hover:not(:disabled) {
-  border-color: #6e7681;
-  background: rgba(110, 118, 129, 0.08);
+  border-color: #24292E;
+  background: rgba(36, 41, 46, 0.08);
+  box-shadow: 0 0 12px rgba(36, 41, 46, 0.12);
 }
 
 .login-btn-icon {
